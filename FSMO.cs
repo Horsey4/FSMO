@@ -1,5 +1,3 @@
-﻿#pragma warning disable CS0672 // Member overrides obsolete member
-
 using UnityEngine;
 using MSCLoader;
 using System.Linq;
@@ -14,7 +12,7 @@ namespace FSMO
         public override string ID => "FSMO";
         public override string Name => "FSMO";
         public override string Author => "Horsey4";
-        public override string Version => "1.0.0";
+        public override string Version => "1.0.1";
         public override bool LoadInMenu => true;
         public static Camera cam;
         readonly static Assembly asm = Assembly.GetExecutingAssembly();
