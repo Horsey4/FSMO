@@ -1,4 +1,4 @@
-﻿using HutongGames.PlayMaker;
+using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,20 +8,12 @@ namespace FSMO.HarmonyOptimizations
 {
     // -------------------- Misc --------------------
 
-    [HarmonyPatch(typeof(Fsm), "Start")]
-    class Start
-    {
-        [HarmonyPriority(800)]
-        static void Prefix() => FsmTime.RealtimeBugFix();
-    }
-
-    [HarmonyPatch(typeof(Fsm), "Update")]
-    class Update
+    [HarmonyPatch(typeof(Fsm), "UpdateDelayedEvents")]
+    class UpdateDelayedEvents
     {
         [HarmonyPriority(0)]
-        static bool Prefix(Fsm __instance, List<DelayedEvent> ___delayedEvents)
+        static bool Prefix(List<DelayedEvent> ___delayedEvents)
         {
-            FsmExecutionStack.PushFsm(__instance);
             for (var i = 0; i < ___delayedEvents.Count; i++)
             {
                 ___delayedEvents[i].Update();
@@ -31,21 +23,6 @@ namespace FSMO.HarmonyOptimizations
                     i--;
                 }
             }
-            __instance.ActiveState.OnUpdate();
-            FsmExecutionStack.PopFsm();
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(Fsm), "FixedUpdate")]
-    class FixedUpdate
-    {
-        [HarmonyPriority(0)]
-        static bool Prefix(Fsm __instance, bool ___activeStateEntered)
-        {
-            FsmExecutionStack.PushFsm(__instance);
-            __instance.ActiveState.OnFixedUpdate();
-            FsmExecutionStack.PopFsm();
             return false;
         }
     }
@@ -60,7 +37,7 @@ namespace FSMO.HarmonyOptimizations
             return false;
         }
 
-        public static GameObject get(Fsm fsm, FsmOwnerDefault ownerDefault) => (ownerDefault.OwnerOption != 0) ? ownerDefault.GameObject.Value : fsm.Owner.gameObject;
+        internal static GameObject get(Fsm fsm, FsmOwnerDefault ownerDefault) => (ownerDefault.OwnerOption != 0) ? ownerDefault.GameObject.Value : fsm.Owner.gameObject;
     }
 
     [HarmonyPatch(typeof(PlayMakerFSM), "FindFsmOnGameObject")]
@@ -86,16 +63,10 @@ namespace FSMO.HarmonyOptimizations
         [HarmonyPriority(0)]
         static bool Prefix(ref PlayMakerFSM __result, GameObject go, string fsmName)
         {
-            __result = get(go, fsmName);
-            return false;
-        }
-
-        public static PlayMakerFSM get(GameObject go, string fsmName)
-        {
             var fsms = go.GetComponents<PlayMakerFSM>();
             for (var i = 0; i < fsms.Length; i++)
-                if (fsms[i].FsmName == fsmName) return fsms[i];
-            return null;
+                if (fsms[i].FsmName == fsmName) __result = fsms[i];
+            return false;
         }
     }
 
