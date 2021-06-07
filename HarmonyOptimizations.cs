@@ -27,49 +27,6 @@ namespace FSMO.HarmonyOptimizations
         }
     }
 
-    [HarmonyPatch(typeof(Fsm), "GetOwnerDefaultTarget")]
-    class GetOwnerDefaultTarget
-    {
-        [HarmonyPriority(0)]
-        static bool Prefix(ref GameObject __result, Fsm __instance, FsmOwnerDefault ownerDefault)
-        {
-            __result = get(__instance, ownerDefault);
-            return false;
-        }
-
-        internal static GameObject get(Fsm fsm, FsmOwnerDefault ownerDefault) => (ownerDefault.OwnerOption != 0) ? ownerDefault.GameObject.Value : fsm.Owner.gameObject;
-    }
-
-    [HarmonyPatch(typeof(PlayMakerFSM), "FindFsmOnGameObject")]
-    class FindFsmOnGameObject
-    {
-        [HarmonyPriority(0)]
-        static bool Prefix(ref PlayMakerFSM __result, GameObject go, string fsmName)
-        {
-            var fsms = go.GetComponents<PlayMakerFSM>();
-            for (var i = 0; i < fsms.Length; i++)
-                if (fsms[i].FsmName == fsmName)
-                {
-                    __result = fsms[i];
-                    return false;
-                }
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(ActionHelpers), "GetGameObjectFsm")]
-    class GetGameObjectFsm
-    {
-        [HarmonyPriority(0)]
-        static bool Prefix(ref PlayMakerFSM __result, GameObject go, string fsmName)
-        {
-            var fsms = go.GetComponents<PlayMakerFSM>();
-            for (var i = 0; i < fsms.Length; i++)
-                if (fsms[i].FsmName == fsmName) __result = fsms[i];
-            return false;
-        }
-    }
-
     [HarmonyPatch(typeof(ActionHelpers), "IsMouseOver")]
     class DoMousePickEvent
     {
@@ -406,7 +363,7 @@ namespace FSMO.HarmonyOptimizations
         [HarmonyPriority(0)]
         static bool Prefix(GetDistance __instance)
         {
-            var go = GetOwnerDefaultTarget.get(__instance.Fsm, __instance.gameObject);
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
             if (!go) return false;
             if (__instance.target.Value == null) return false;
             __instance.storeResult.Value = Vector3.Distance(
@@ -423,7 +380,7 @@ namespace FSMO.HarmonyOptimizations
         [HarmonyPriority(0)]
         static bool Prefix(GetPosition __instance)
         {
-            var go = GetOwnerDefaultTarget.get(__instance.Fsm, __instance.gameObject);
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
             if (!go) return false;
             __instance.vector.Value = __instance.space == Space.World ? go.transform.position : go.transform.localPosition;
             __instance.x.Value = __instance.vector.Value.x;
@@ -439,7 +396,7 @@ namespace FSMO.HarmonyOptimizations
         [HarmonyPriority(0)]
         static bool Prefix(GetScale __instance)
         {
-            var go = GetOwnerDefaultTarget.get(__instance.Fsm, __instance.gameObject);
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
             if (!go) return false;
             __instance.vector.Value = __instance.space == Space.World ? go.transform.lossyScale : go.transform.localScale;
             __instance.xScale.Value = __instance.vector.Value.x;
@@ -455,7 +412,7 @@ namespace FSMO.HarmonyOptimizations
         [HarmonyPriority(0)]
         static bool Prefix(GetRotation __instance)
         {
-            var go = GetOwnerDefaultTarget.get(__instance.Fsm, __instance.gameObject);
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
             if (!go) return false;
             if (__instance.space == Space.World)
             {
