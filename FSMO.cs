@@ -12,7 +12,7 @@ namespace FSMO
         public override string ID => "FSMO";
         public override string Name => "FSMO";
         public override string Author => "Horsey4";
-        public override string Version => "1.0.1";
+        public override string Version => "1.0.2";
         public override bool LoadInMenu => true;
         public static Camera cam;
         readonly static Assembly asm = Assembly.GetExecutingAssembly();
@@ -29,7 +29,7 @@ namespace FSMO
                 Object.DontDestroyOnLoad(fsmo);
                 fsmo.AddComponent<FSMOMono>();
             }
-            instance.PatchAll(asm);
+            OnModEnabled();
         }
 
         public override void OnLoad()
@@ -45,13 +45,17 @@ namespace FSMO
 
         public override void OnModDisabled() => instance.UnpatchAll("FSMO");
 
-        public override void OnModEnabled() => instance.PatchAll(asm);
+        public override void OnModEnabled()
+        {
+            cam = Camera.main;
+            instance.PatchAll(asm);
+        }
 
         public static RaycastHit raycast(int mask)
         {
             if (!cam) return default;
             if (raycasts.ContainsKey(mask)) return raycasts[mask];
-            Physics.Raycast(ray, out var hit, float.PositiveInfinity, mask);
+            Physics.Raycast(ray, out var hit, 3000, mask);
             raycasts.Add(mask, hit);
             return hit;
         }
