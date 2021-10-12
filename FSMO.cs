@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using MSCLoader;
 using System.Linq;
 using System.Collections.Generic;
@@ -12,16 +12,34 @@ namespace FSMO
         public override string ID => "FSMO";
         public override string Name => "FSMO";
         public override string Author => "Horsey4";
-        public override string Version => "1.0.2";
+        public override string Version => "1.1.0";
         public override bool LoadInMenu => true;
-        public static Camera cam;
+        internal static Camera cam;
         readonly static Assembly asm = Assembly.GetExecutingAssembly();
         readonly static HarmonyInstance instance = HarmonyInstance.Create("FSMO");
         readonly static Dictionary<int, RaycastHit> raycasts = new Dictionary<int, RaycastHit>();
         static GameObject fsmo;
+        static RaycastHit hit;
         static Ray ray;
+        static Ray last;
 
-        public override void OnMenuLoad()
+        public override void OnMenuLoad() => OnModEnabled();
+
+        public override void OnLoad() => cam = Camera.main;
+
+        public override void Update()
+        {
+            last = ray;
+            if (cam)
+            {
+                ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (last.origin != ray.origin || last.direction != ray.direction) raycasts.Clear();
+            }
+        }
+
+        public override void OnModDisabled() => instance.UnpatchAll("FSMO");
+
+        public override void OnModEnabled()
         {
             if (!fsmo)
             {
@@ -29,33 +47,15 @@ namespace FSMO
                 Object.DontDestroyOnLoad(fsmo);
                 fsmo.AddComponent<FSMOMono>();
             }
-            OnModEnabled();
-        }
-
-        public override void OnLoad()
-        {
-            cam = Camera.main;
-        }
-
-        public override void Update()
-        {
-            if (cam) ray = cam.ScreenPointToRay(Input.mousePosition);
-            raycasts.Clear();
-        }
-
-        public override void OnModDisabled() => instance.UnpatchAll("FSMO");
-
-        public override void OnModEnabled()
-        {
             cam = Camera.main;
             instance.PatchAll(asm);
         }
 
-        public static RaycastHit raycast(int mask)
+        internal static RaycastHit raycast(int mask)
         {
             if (!cam) return default;
             if (raycasts.ContainsKey(mask)) return raycasts[mask];
-            Physics.Raycast(ray, out var hit, 3000, mask);
+            Physics.Raycast(ray, out hit, 3000, mask);
             raycasts.Add(mask, hit);
             return hit;
         }
@@ -65,10 +65,11 @@ namespace FSMO
     {
         void OnLevelWasLoaded()
         {
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
             switch (Application.loadedLevelName)
             {
                 case "GAME":
+                case "MainMenu":
                     break;
                 case "Ending":
                     FSMO.cam = GameObject.FindGameObjectsWithTag("MainCamera").First(x => x.name == "CAM").GetComponent<Camera>();
